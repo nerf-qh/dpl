@@ -65,7 +65,11 @@ module DPL
         log 'Install plugins'
         plugins.each do |plugin|
           log " - #{plugin}"
-          error 'Failed to instal plugin' unless context.shell "./cf install-plugin -f #{plugin}"
+          if plugin_installed?(plugin)
+            log '   installed'
+          else
+            error 'Failed to instal plugin' unless context.shell "./cf install-plugin -f #{plugin}"
+          end
         end
       end
 
@@ -73,7 +77,9 @@ module DPL
         option(:shell) || 'push'
       end
 
-      private
+      def plugin_installed?(plugin)
+        context.shell("./cf plugins | grep -q #{plugin}")
+      end
 
       def plugins
         option(:plugins).split(',').map(&:strip) || []
