@@ -24,6 +24,7 @@ module DPL
         initial_go_tools_install
         context.shell "./cf api #{option(:api)} #{'--skip-ssl-validation' if options[:skip_ssl_validation]}"
         context.shell "./cf login -u #{option(:username)} -p #{option(:password)} -o #{option(:organization)} -s #{option(:space)}"
+        install_plugins
       end
 
       def check_app
@@ -37,7 +38,9 @@ module DPL
       end
 
       def push_app
-        error 'Failed to push app' unless context.shell("./cf push#{manifest}")
+        command = "./cf #{shell_command} #{option(:app)} #{manifest}"
+        log "Command: #{command}"
+        error 'Failed to push app' unless context.shell(command)
 
       ensure
         context.shell "./cf logout"
@@ -56,6 +59,24 @@ module DPL
       def set_api
         region = options[:region] || "ng"
         options[:api] = options[:api] || REGIONS[region]
+      end
+
+      def install_plugins
+        log 'Install plugins'
+        plugins.each do |plugin|
+          log " - #{plugin}"
+          error 'Failed to instal plugin' unless context.shell "./cf install-plugin -f #{plugin}"
+        end
+      end
+
+      def shell_command
+        option(:shell) || 'push'
+      end
+
+      private
+
+      def plugins
+        option(:plugins).split(',').map(&:strip) || []
       end
     end
   end
